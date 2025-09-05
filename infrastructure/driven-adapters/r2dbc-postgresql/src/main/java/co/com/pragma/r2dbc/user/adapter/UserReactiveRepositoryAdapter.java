@@ -5,12 +5,14 @@ import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.pragma.r2dbc.user.entity.UserEntity;
 import co.com.pragma.r2dbc.user.repository.UserReactiveRepository;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+@Slf4j
 @Repository
 public class UserReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     User/* change for domain model */,
@@ -33,6 +35,10 @@ public class UserReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     @Override
     public Mono<User> saveUser(User user) {
       return save(user)
-	.as(transactionalOperator::transactional);
+	.as(transactionalOperator::transactional)
+	.doOnSubscribe(subscribe -> log.trace("Subscripction started for user: {}", user))
+	.doOnSuccess(result -> log.info("User saved succesfully: {}", result))
+	.doOnError(error -> log.error("Error saving the user: {}", user, error))
+	.doFinally(signal -> log.trace("saveUser finished with signal: {}", signal));
     }
 }
